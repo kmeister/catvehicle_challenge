@@ -61,7 +61,7 @@ The following parameters can be used to alter the behavior of the Vehicle State 
 * **/vehicle\_status\_monitor/stopped\_threshold** (0.1) - when velocity falls below this value after having been in motion the catvehicel will be considered to be "stopped"
 
 #### Obstacle Detector Node
-The Obstacle Detector Node is resposible for processing the output of the State Update Node to detect the locations of objects in the CAT Vehicle's world. It publishes this data to the "/detections" topic in the form of polygons representing the location and area (in the horizontal plane) of the detected objects. The Obstacle Detector Node also monitors the output of the Vehicle Status Monitor, and when the status transitions to "stoped" within 60 seconds it will produce a world file containing rectangular prisms which represent each object it has detected up to that point.
+The Obstacle Detector Node is responsible for processing the output of the State Update Node to detect the locations of objects in the CAT Vehicle's world. It publishes this data to the "/detections" topic in the form of polygons representing the location and area (in the horizontal plane) of the detected objects. The Obstacle Detector Node also monitors the output of the Vehicle Status Monitor, and when the status transitions to "stoped" within 60 seconds it will produce a world file containing rectangular prisms which represent each object it has detected up to that point.
 
 #### Obstacle Detector Node Parameters
 The following parameters can be used to modify the behavior of the Obstacle Detector Node.
@@ -74,36 +74,7 @@ The Lidar data leaves a data deadzone near the front of the CAT Vehicle due to t
 #### Laser Data Node Parameters
 The following parameters can be used to modify the behavior of the Laser Data Node. Defualt values are in parentheses.
 * **/laser_data/max_range** (45) - Laser Scan points beyond this distance will be excluded from the point cloud produced by the Laser Data Node
-## Requirements
-The following requirements have been implemented by this package. Instructions for how to verify each requirement can be found in docs/meister-RequirementsVerification.pdf. A or B baseline status is denoted in parentheses
 
-### 1. Lidar Filter Node
-1.1. (B) The Lidar Filter Node shall produce a filtered dataset from the /catvehicle/lidar_points topic  
-  1.1.1 (B) A distance threshold filter shall be used to exclude objects less than 1.5 m from the velodyne sensor in the horizontal plan in order to exclude the hood of the car  
-  1.1.2 (B) A distance threshold filter shall be used to exclude the points returned from the extents of the /catvehicle/lidar_points topic.  
-  1.1.3 (B) A height threshold filter shall be used to exclude the ground or near ground (< 0.2m) detections.    
-
-### 2. State Update Node
-2.1 (B) The State Update Node shall transform the position of the points in the point cloud output from the Lidar Filter into the /catvehicle/odom coordinate system.  
-2.2 (B) The State Update Node shall publish the transformed data to the /meister/transformed_lidar_points topic.
-
-### 3. Vehicle Status Monitor Node
-3.1 (B) The vehicle status monitor shall publish "in_motion" to the "/meister/vehicle_status" topic when CAT Vehicle linear velocity exceeds a parameterized value  
-3.2 (B) The vehicle status monitor shall publish "stopped" to the "/meister/vehicle_status" topic when CAT Vehicle linear velocity falls below a parameterized value after having been in motion.  
-3.3 (B) The vehicle status monitor shall publish "started" to the "meister/vehicle_status" topic upon first receiving a message from the "/catvehicle/vel" topic.  
-
-### 4. Obstacle Detector Node
-4.1 (B) The Obstacle Detector Node shall consume the filtered and transformed point cloud from the State Update Model to identify objects within the arc of the CAT Vehicle’s Lidar sensor which are taller than 0.2 Meters.    
-  4.1.1 (B) The Obstacle Detector Node shall publish data to the “/detections” topic containing polygons encompassing the footprint of detected objects.  
-  4.1.2 (A) The Obstacle Detector Node shall combine lidar points within 0.5 m of each other  in the X/Y plane into a single object.   
-  4.1.3 (B) Polygons shall be axis aligned (catvehicle/odom coordinate system) bounding rectangles.  
-4.2 (B) (B) The Obstacle Detector shall be capable of producing a gazebo world file within 60 seconds of receiving a message indicating the vehicle has come to rest after having previously been in motion.  
-  4.2.1 (B) The world file shall contain a single axis aligned (in the fixed global coordinate system) bounding volume for each object detected by the Obstacle Detector Node.  
-  4.2.2 (B) Bounding volume height shall be the maximum height of any lidar or laser detections used by the Obstacle Detector Node to produce a “/detections” message for that object.  
-4.3 (A) The obstacle detector node shall be capable of utilizing both the data from the State Update Node and the Laser Data Node for producing obstacle detections.
-
-### 5. Laser Data Node
-5.1 (A) The Laser Data Node shall be responsible for generating a point cloud from the laser detections from the “/catvehicle/front_laser_points” topic in the “/catvehicle/odom” coordinate system.
 
 # Dependencies
 * Ubuntu 14.04
@@ -128,7 +99,7 @@ Beta Release Demo Video can be found at: [https://youtu.be/MIEZXIWmMOI](https://
 
 # Setup
 It is recommended that you start with the virtual machine provided by the catvehicle challenge [here](https://cps-vo.org/node/26585).
-### Option 1: Cloning from github/gitlab (shown in beta release demo video)
+### Cloning from github/gitlab (shown in beta release demo video)
 *note: you'll need permission to access the ece573-2017S-meister/meister repo on git.engr.arizona.edu for this method*
 1. open a terminal and enter the following
 ```
@@ -139,33 +110,13 @@ catkin_init_workspace
 git clone https://github.com/sprinkjm/catvehicle.git
 git clone https://github.com/sprinkjm/obstaclestopper.git
 git clone https://github.com/sprinkjm/catvehicle_simulink
-git clone https://git.engr.arizona.edu/ece573-2017S-meister/meister.git
+git clone https://github.com/kmeister/catvehicle_challenge.git meister
 cd ..
 ```
 2. follow the directions from the CAT Vehicle hoffman follower demo above to generate the catvehicle_hoffmanfollower package  
 3. follow the directions from the stopafterdistance demo above to generate the stopafterdistance package
 4. in the terminal from step 1 enter the following
 ```
-catkin_make
-catkin_make tests
-source devel/setup.bash
-```
-
-### Option 2: Cloning from github and using the cvchallenge_final.tgz submitted to D2L
-1. Open a terminal and enter the following
-```
-cd ~
-mkdir -p catvehicle_ws/src
-cd catvehicle_ws/src
-catkin_init_workspace
-git clone https://github.com/sprinkjm/catvehicle.git
-git clone https://github.com/sprinkjm/obstaclestopper.git
-```
-2. Download and save the cvchallenge_final.tgz to ~/catvehicle_ws/src
-3. In the terminal from step 1, do the following
-```
-tar zxf cvchallenge_final.tgz
-cd ..
 catkin_make
 catkin_make tests
 source devel/setup.bash
@@ -180,10 +131,11 @@ sudo make
 #copy or symlink libgtest.a and ligtest_main.a to /usr/lib folder
 sudo cp *.a /usr/lib
 ```
+
 # Running This Project
 See the video demo for examples of this in action.
 #### Launch files under meister/launch
-* #### meister_only.launch
+#### meister_only.launch
 This launch file will launch only the nodes included in this package. You will have to manually launch the catvehicle, and any method you choose of controlling catvehicle velocity
 
 To use this launch file, open a terminal and enter the following:
@@ -193,7 +145,7 @@ source devel/setup.bash
 roslaunch meister meister_only.launch
 ```
 
-* #### meister.launch
+#### meister.launch
 This launch file assumes all of the dependencies above are pressent. It will launch the CAT Vehicle, the Hoffman Follower, stopafterdistance, the nodes included in this package and a recorder instance which will record a bagfile containing everything needed by the "plot_obstacle_detector_data" function discussed below, and save it to ~/catvehicle_ws/src/meister/bagfiles/meister.bag. You can open the file directly to see which arguments it supports. Note that it defaults to launching the CAT Vehicle in the meister/worlds/world1.world worldfile, but you can override that using the worldfile argument.  
 
 To use this launch file, open a terminal and enter the following:
@@ -211,9 +163,7 @@ directory and
 * world2.world
 
 # Verifying Requirements
-There is a complete plan for veryifying all of the requirements listed above: *docs/meister-RequirmentsVerification.pdf*. It describes the test setup required to verify all of the above requirements, each of the requirements, the test(s)s needed to verify that requirment, how to execute that test and what the expected output of the test should be.
-
-In addition, I've provided two launch files which can be used for testing  and verifying this package:
+There are two launch files which can be used for testing  and verifying this package:
 
 ### launch/verification.test
 This launch file will execute all of the tests described in the verification plan assuming you've followed the directions
