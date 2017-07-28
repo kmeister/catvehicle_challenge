@@ -1,0 +1,65 @@
+<!--
+Author: Kurt Meister
+
+Copyright (c) 2017, Kurt Meister
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ * Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
+
+============================================================================
+
+Description:
+	launch file for executing all tests in the verification plan. Note you must perform the steps from test setup in the
+	verification plan before executing this test.
+-->
+
+<launch>
+    <test test-name="Test_1" pkg="meister" type="system_integration_test" args="--gtest_filter=System_Integration_Test.lidar_filter bagfile=$(find meister)/bagfiles/system_verification.bag" />
+    <test test-name="Test_2" pkg="meister" type="lidar_filter_test" args="--gtest_filter=LidarFilterNodeTest.filter_close_points"/>
+    <test test-name="Test_3" pkg="meister" type="lidar_filter_test" args="--gtest_filter=LidarFilterNodeTest.filter_far_points"/>
+    <test test-name="Test_4" pkg="meister" type="lidar_filter_test" args="--gtest_filter=LidarFilterNodeTest.filter_ground_points"/>
+    <test test-name="Test_5" pkg="meister" type="system_integration_test" args="--gtest_filter=System_Integration_Test.state_update bagfile=$(find meister)/bagfiles/system_verification.bag" />
+    <test test-name="Test_6" pkg="meister" type="state_update_test" args="--gtest_filter=StateUpdateNodeTest.test_point_cloud_transform_translational_rotational"/>
+    <test test-name="Test_7" name="vehicle_status_monitor" pkg="meister" type="vehicle_status_monitor_test" args="--gtest_filter=VehicleStatusMonitorNodeTest.test_in_motion_transition">
+        <param name="in_motion_threshold" value="1.0"/>
+        <param name="stopped_threshold" value="0.1"/>
+    </test>
+    <test test-name="Test_8" name="vehicle_status_monitor" pkg="meister" type="vehicle_status_monitor_test" args="--gtest_filter=VehicleStatusMonitorNodeTest.test_stopped_transition">
+        <param name="in_motion_threshold" value="1.0"/>
+        <param name="stopped_threshold" value="0.1"/>
+    </test>
+    <test test-name="Test_9" name="vehicle_status_monitor" pkg="meister" type="vehicle_status_monitor_test" args="--gtest_filter=VehicleStatusMonitorNodeTest.test_started_transition">
+        <param name="in_motion_threshold" value="1.0"/>
+        <param name="stopped_threshold" value="0.1"/>
+    </test>
+    <test test-name="Test_10" pkg="meister" type="system_integration_test" args="--gtest_filter=System_Integration_Test.obstacle_detector bagfile=$(find meister)/bagfiles/system_verification.bag" />
+    <param name="/obstacle_detector/world_template_filename" value="$(find meister)/worlds/empty.world"/>
+    <param name="/obstacle_detector/world_output_filename" value="$(find meister)/worlds/obstacle_detector_test.world"/>
+    <test test-name="Test_11" pkg="meister" type="obstacle_detector_test" args="--gtest_filter=ObstacleDetectorNodeTest.test_points_in_detection"/>
+    <test test-name="Test_12" pkg="meister" type="system_integration_test" args="--gtest_filter=System_Integration_Test.detections_are_aabb bagfile=$(find meister)/bagfiles/system_verification.bag" />
+
+    <!-- Test 13, 14, 15 must execute serially because they access the same file and running in parallel will cause a false failure -->
+    <test test-name="Test_13_14_15" pkg="meister" type="obstacle_detector_test" time-limit="180.0" args="--gtest_filter=ObstacleDetectorNodeTest.test_world_creation_timing:ObstacleDetectorNodeTest.test_world_contents:ObstacleDetectorNodeTest.test_bounding_volume_dimensions"/>
+
+    <test test-name="Test_16" pkg="meister" type="system_integration_test" args="--gtest_filter=System_Integration_Test.laser_and_lidar_detections bagfile=$(find meister)/bagfiles/system_verification.bag" />
+    <test test-name="Test_17" pkg="meister" type="laser_data_test" args="--gtest_filter=LaserDataNodeTest.test_laser_to_point_cloud"/>
+</launch>

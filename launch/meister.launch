@@ -1,0 +1,113 @@
+<!--
+Author: Kurt Meister
+
+Copyright (c) 2017, Kurt Meister
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ * Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
+
+============================================================================
+
+Description:
+	launch file for the meister package. launches the obstacle detection
+	system I developed for task 3, the hoffman follower, the stopafterdistance node, and the catvehicle gazebo
+	simulation
+
+-->
+
+<launch>
+
+	<arg name="paused" default="false"/>
+	<arg name="use_sim_time" default="true"/>
+	<arg name="gui" default="false"/>
+	<arg name="headless" default="false"/>
+	<arg name="debug" default="false"/>
+	<arg name="worldfile" default="world1.world"/>
+
+	<!-- change these defaults here, or as a cmd line arg, in order to turn off   -->
+	<!--   sensors that you aren't using, thus freeing up computational resources -->
+	<!--   and reducing storage space for your bagfiles -->
+	<arg name="front_laser_points" default="true"/>
+	<arg name="velodyne_points" default="true"/>
+	<arg name="camera_right" default="false"/>
+	<arg name="camera_left" default="false"/>
+	<!-- change these defaults here, to see further left with the velodyne   -->
+	<arg name="velodyne_max_angle" default="1.57"/>
+	<!-- change these defaults here, to see further right with the velodyne   -->
+	<arg name="velodyne_min_angle" default="-1.57"/>
+	<!-- set the bagfile name -->
+	<arg name="bagfile" default="meister.bag"/>
+
+
+	<include file="$(find gazebo_ros)/launch/empty_world.launch">
+		<arg name="world_name" value="$(find meister)/worlds/$(arg worldfile)"/>
+		<arg name="debug" value="$(arg debug)" />
+		<arg name="gui" value="$(arg gui)" />
+		<arg name="paused" value="$(arg paused)"/>
+		<arg name="use_sim_time" value="$(arg use_sim_time)"/>
+		<arg name="headless" value="$(arg headless)"/>
+	</include>
+
+	<group ns="catvehicle">
+	<param name="robot_description"
+				 command="$(find xacro)/xacro.py '$(find catvehicle)/urdf/catvehicle.xacro' roboname:='catvehicle' front_laser_points:='$(arg front_laser_points)' velodyne_points:='$(arg velodyne_points)' camera_right:='$(arg camera_right)' camera_left:='$(arg camera_left)' velodyne_max_angle:='$(arg velodyne_max_angle)' velodyne_min_angle:='$(arg velodyne_min_angle)'" />
+
+	<include file="$(find catvehicle)/launch/catvehicle.launch">
+		<arg name="robot_name" value="catvehicle"/>
+		<arg name="init_pose" value="-x 0 -y 0 -z 0"/>
+		<arg name="config_file" value="catvehicle_control.yaml"/>
+	</include>
+	</group>
+
+
+
+<!-- meister nodes -->
+<node name="vehicle_status_monitor" pkg="meister" type="vehicle_status_monitor" output="screen">
+	<param name="in_motion_threshold" value="0.75"/>
+	<param name="stopped_threshold" value="0.1"/>
+</node>
+
+
+
+<node name="lidar_filter" pkg="meister" type="lidar_filter"/>
+<node name="laser_data" pkg="meister" type="laser_data"/>
+
+<node name="obstacle_detector" pkg="meister" type="obstacle_detector" output="screen">
+	<param name="world_template_filename" value="$(find meister)/worlds/empty.world"/>
+	<param name="world_output_filename" value="$(find meister)/worlds/detections.world"/>
+</node>
+
+	<node name="state_update_node" pkg="meister" type="state_update_node" output="screen"/>
+
+<!-- Stop after distance -->
+<node name="stopafterdistance_node" pkg="stopafterdistance" type="stopafterdistance_node"/>
+
+<!-- hoffman follower -->
+<remap from="/catvehicle/cmd_vel" to="/catvehicle/cmd_vel_task4"/>
+<node name="catvehicle_hoffmannfollower_node" pkg="catvehicle_hoffmannfollower" type="catvehicle_hoffmannfollower_node"/>
+
+<!-- record relevant data to a log file -->
+<node name="rosbag_recorder" pkg="rosbag" type="record"
+	args="-O $(find meister)/bagfiles/$(arg bagfile) /catvehicle/lidar_points /meister/transformed_lidar_points
+	/meister/filtered_lidar_points /meister/laser_points /meister/vehicle_status /detections" />
+
+</launch>
